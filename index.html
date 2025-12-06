@@ -192,29 +192,33 @@
                             <p class="text-gray-600 mb-4">
                                 O Custo de Mercadoria Vendida (CMV) é vital. A maioria descobre o prejuízo no dia 30. Com a Grow, analisamos <strong>semanalmente</strong>.
                             </p>
+                            
+                            <!-- NOVO CONTEÚDO SEM O SIMULADOR -->
                             <div class="space-y-4 mb-6">
-                                <div class="bg-white border border-gray-200 p-3 rounded-lg shadow-sm hover:shadow-md transition-shadow cursor-default">
-                                    <h5 class="font-bold text-gray-800 text-sm">📅 Semana 1-2: Identificação</h5>
-                                    <p class="text-xs text-gray-500">Detectamos compras caras ou desperdício imediatamente.</p>
+                                <h4 class="text-lg font-bold text-gray-900 mb-3 border-b border-gray-100 pb-2">Nossas Ações de Controle Semanal:</h4>
+                                
+                                <div class="bg-gray-50 border border-gray-200 p-4 rounded-lg shadow-sm">
+                                    <h5 class="font-bold text-grow-dark text-sm mb-1 flex items-center">
+                                        <span class="text-grow-light mr-2 text-xl">📊</span> Análise ABC e Precificação
+                                    </h5>
+                                    <p class="text-xs text-gray-600">
+                                        Analisamos a **Curva ABC** (mais vendidos) e aplicamos o **Princípio de Pareto** (itens de maior custo/impacto) para garantir que sua margem seja sempre maximizada através da correção de preços e fichas técnicas.
+                                    </p>
                                 </div>
-                                <div class="bg-grow-light/10 border border-grow-light/50 p-3 rounded-lg shadow-sm">
-                                    <h5 class="font-bold text-grow-dark text-sm">🛠️ Semana 3: Ação Proativa</h5>
-                                    <p class="text-xs text-gray-700">Você ajusta o porcionamento ou negocia compras, salvando a margem do mês.</p>
+                                
+                                <div class="bg-gray-50 border border-gray-200 p-4 rounded-lg shadow-sm">
+                                    <h5 class="font-bold text-grow-dark text-sm mb-1 flex items-center">
+                                        <span class="text-grow-light mr-2 text-xl">📦</span> Gestão de Estoque e Compras
+                                    </h5>
+                                    <p class="text-xs text-gray-600">
+                                        Controlamos inventários periódicos (cíclicos), monitoramos o **FIFO** (Primeiro que Entra, Primeiro que Sai) e auditamos o processo de compras e recebimento para eliminar desperdício e garantir o melhor preço.
+                                    </p>
                                 </div>
                             </div>
+                            <!-- FIM DO NOVO CONTEÚDO -->
 
-                            <!-- LLM FEATURE: Corrective Action Generator -->
-                            <div class="mt-8 pt-6 border-t border-gray-200">
-                                <h4 class="text-lg font-bold text-gray-900 mb-3">Simulador de Ação ✨</h4>
-                                <p class="text-sm text-gray-600 mb-4">
-                                    Veja o tipo de *insight* que entregamos. Simule uma situação de CMV muito alto (40%) e receba um plano de 3 ações corretivas imediatas.
-                                </p>
-                                <button id="generateActionBtn" onclick="generateCorrectiveActions()" class="w-full bg-grow-light hover:bg-grow-dark/80 text-white font-bold py-3 px-4 rounded-lg transition-colors shadow-md">
-                                    Gerar Ações Corretivas para CMV Alto (40%) ✨
-                                </button>
-                                <div id="actionResults" class="mt-4 p-4 bg-gray-50 border border-gray-200 rounded-lg min-h-[100px] flex items-center justify-center text-center text-gray-500 text-sm italic">
-                                    Clique no botão acima para simular a análise da Grow.
-                                </div>
+                            <div class="p-4 bg-grow-light/10 rounded-lg border-l-4 border-grow-light mt-8">
+                                <p class="italic text-sm text-gray-600">"Um desvio no CMV de 3% no início do mês pode custar todo o seu lucro."</p>
                             </div>
                         </div>
                         <div class="flex flex-col items-center">
@@ -339,9 +343,7 @@
 
     <!-- JavaScript for Logic and Charts -->
     <script>
-        // --- Gemini API Configuration ---
-        const apiKey = ""; 
-        const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+        // --- REMOVIDA A CONFIGURAÇÃO DA GEMINI API ---
 
         // State Management
         let currentTab = 'daily';
@@ -349,76 +351,7 @@
         let weeklyChartInstance = null;
         let monthlyChartInstance = null;
         
-        // Utility for Exponential Backoff
-        async function fetchWithBackoff(url, options, maxRetries = 5, delay = 1000) {
-            for (let i = 0; i < maxRetries; i++) {
-                try {
-                    const response = await fetch(url, options);
-                    if (response.status !== 429 && response.ok) {
-                        return response;
-                    }
-                    if (response.status === 429) {
-                        await new Promise(resolve => setTimeout(resolve, delay));
-                        delay *= 2; // Exponential increase
-                    } else {
-                        throw new Error(`API Error: ${response.statusText}`);
-                    }
-                } catch (error) {
-                    if (i === maxRetries - 1) throw error;
-                    await new Promise(resolve => setTimeout(resolve, delay));
-                    delay *= 2;
-                }
-            }
-            throw new Error("Maximum retries reached.");
-        }
-
-        // --- LLM Feature: Corrective Actions Generator ---
-        async function generateCorrectiveActions() {
-            const resultsDiv = document.getElementById('actionResults');
-            const button = document.getElementById('generateActionBtn');
-            const cmvValue = '40%'; 
-
-            button.disabled = true;
-            button.innerText = 'Gerando Ações... ⏳';
-            resultsDiv.innerHTML = '<p class="text-sm text-gray-500 italic">Analisando o CMV e buscando soluções...</p>';
-
-            const systemPrompt = "Aja como um analista sênior de BPO financeiro especializado em restaurantes no Brasil. Seu objetivo é fornecer ações corretivas imediatas e altamente específicas que um dono de restaurante pode implementar em uma semana. Mantenha a resposta focada e concisa, estritamente em português, apresentando uma lista de no máximo 3 pontos.";
-            const userQuery = `Meu Custo de Mercadoria Vendida (CMV) está em ${cmvValue}, o que é muito alto para um restaurante. Sugira 3 ações corretivas imediatas e muito específicas que posso implementar em uma semana para reduzir essa porcentagem.`;
-            
-            const payload = {
-                contents: [{ parts: [{ text: userQuery }] }],
-                systemInstruction: {
-                    parts: [{ text: systemPrompt }]
-                },
-            };
-
-            try {
-                const response = await fetchWithBackoff(GEMINI_API_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-
-                const result = await response.json();
-                const text = result.candidates?.[0]?.content?.parts?.[0]?.text || "Não foi possível gerar a análise. Tente novamente.";
-                
-                // Format the response text (assuming it returns a list)
-                const formattedText = text.split('\n').map(line => {
-                    if (line.trim().startsWith('*') || line.trim().startsWith('-') || line.trim().startsWith('1.') || line.trim().startsWith('2.')) {
-                        return `<li class="flex items-start mb-2"><span class="text-grow-light mr-2 text-lg">•</span><span class="text-gray-700 text-left">${line.substring(2).trim()}</span></li>`;
-                    }
-                    return line;
-                }).join('');
-
-                resultsDiv.innerHTML = `<ul class="list-none p-0 m-0">${formattedText}</ul>`;
-
-            } catch (error) {
-                resultsDiv.innerHTML = `<p class="text-sm text-red-500">Erro na simulação: ${error.message}.</p>`;
-            } finally {
-                button.disabled = false;
-                button.innerText = 'Gerar Ações Corretivas para CMV Alto (40%) ✨';
-            }
-        }
+        // --- REMOVIDA A FUNÇÃO generateCorrectiveActions ---
 
         // --- Navigation Logic ---
         function switchTab(tabId) {
@@ -626,7 +559,7 @@
 
         // Initialize App
         window.addEventListener('DOMContentLoaded', () => {
-            renderDailyChart(); // Initial Load
+            switchTab('daily'); // Ensure 'daily' is selected and chart is rendered
         });
 
     </script>
